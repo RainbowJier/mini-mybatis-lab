@@ -1,7 +1,6 @@
 package com.frank.mybatis;
 
 import com.frank.mybatis.support.H2DatabaseSupport;
-import lombok.Data;
 import org.junit.jupiter.api.Test;
 
 import javax.sql.DataSource;
@@ -9,7 +8,7 @@ import java.sql.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class JdbcBaselineTest {
+class JdbcBaselineTest_01 {
 
     @Test
     void bindQueryNullAndRollback() throws Exception {

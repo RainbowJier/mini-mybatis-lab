@@ -9,7 +9,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class AnnotationContractTest {
+public class AnnotationContractTest_02 {
 
     @Test
     void sqlAnnotationsAreRuntimeMethodAnnotations() {
