@@ -1,0 +1,10 @@
+target/
+.idea/
+*.iml
+*.mv.db
+*.trace.db
+*.log
+.DS_Store
+
+.local-backup/
+/.pi/settings.json
