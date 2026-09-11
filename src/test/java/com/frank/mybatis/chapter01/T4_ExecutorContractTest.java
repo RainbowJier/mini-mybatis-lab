@@ -18,7 +18,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class ExecutorContractTest_04 {
+public class T4_ExecutorContractTest {
 
     private MappedStatement statement(String sql, SqlCommandType command) {
         return new MappedStatement("test.statement", command, sql,

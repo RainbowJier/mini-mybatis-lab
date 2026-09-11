@@ -48,6 +48,9 @@
                 <version>3.2.5</version>
                 <configuration>
                     <failIfNoTests>false</failIfNoTests>
+                    <includes>
+                        <include>**/*Test*.java</include>
+                    </includes>
                 </configuration>
             </plugin>
             <plugin>

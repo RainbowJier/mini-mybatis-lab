@@ -8,7 +8,7 @@ import java.sql.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class JdbcBaselineTest_01 {
+class T1_JdbcBaselineTest {
 
     @Test
     void bindQueryNullAndRollback() throws Exception {
