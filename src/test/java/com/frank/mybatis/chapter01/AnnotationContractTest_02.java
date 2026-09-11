@@ -1,4 +1,4 @@
-package com.frank.mybatis;
+package com.frank.mybatis.chapter01;
 
 import com.frank.mybatis.annotations.*;
 import org.junit.jupiter.api.Test;
