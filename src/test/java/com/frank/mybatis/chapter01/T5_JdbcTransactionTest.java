@@ -34,7 +34,7 @@ public class T5_JdbcTransactionTest {
         assertThrows(IllegalStateException.class, transaction::getConnection);
         assertThrows(IllegalStateException.class, transaction::commit);
 
-        // Here get a new Connection object, don't use the same connection from transaction.
+        // Here get a new Connection object, don't use the same connection from the same transaction.
         try (Connection c = ds.getConnection(); Statement s = c.createStatement()) {
             ResultSet resultSet = s.executeQuery("select * from t_user order by id");
             assertTrue(resultSet.next());
