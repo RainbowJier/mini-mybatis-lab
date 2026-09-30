@@ -3,7 +3,7 @@ package com.frank.mybatis.chapter01;
 import com.frank.mybatis.fixture.TUser;
 import com.frank.mybatis.mapping.*;
 import com.frank.mybatis.session.*;
-import com.frank.mybatis.session.factory.DefaultSqlSessionFactory;
+import com.frank.mybatis.session.DefaultSqlSessionFactory;
 import com.frank.mybatis.support.H2DatabaseSupport;
 
 import java.util.*;
@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class SessionContractTest {
+class T6_SessionContractTest {
     private SqlSessionFactory factory() {
         Configuration c = new Configuration(H2DatabaseSupport.newDataSource());
         c.addMappedStatement(stmt("chapter01.session.insert",

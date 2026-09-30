@@ -1,9 +1,5 @@
-package com.frank.mybatis.session.factory;
+package com.frank.mybatis.session;
 
-import com.frank.mybatis.session.Configuration;
-import com.frank.mybatis.session.DefaultSqlSession;
-import com.frank.mybatis.session.SqlSession;
-import com.frank.mybatis.session.SqlSessionFactory;
 import com.frank.mybatis.transaction.JdbcTransaction;
 
 public class DefaultSqlSessionFactory implements SqlSessionFactory {
