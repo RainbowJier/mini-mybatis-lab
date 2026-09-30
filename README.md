@@ -2,7 +2,7 @@
 
 这是一个**从零手写 MyBatis** 的 Java 17 学习项目。目标不是马上做出一个生产级 ORM，而是沿着真实框架的调用链，一步一步把 JDBC、Mapper、动态代理、SQL 解析、结果映射、缓存和事务实现出来。
 
-> 重要：目前项目只准备了 Maven、启动类和数据库表结构。MyBatis 核心代码、Mapper、业务 Demo 和测试，都需要你按 `docs/roadmap.md` 自己创建。
+> 当前进度：第 01 章施工中。`annotations`、`mapping`、`executor`、`transaction` 四个模块及测试 T1–T5 已完成（`mvn test` 全绿）；`session`、`binding`、`builder` 和端到端测试待实现，按 `docs/roadmap.md` 继续推进。
 
 ## 一、当前已经有什么
 
@@ -13,7 +13,8 @@
 - Java 17
 - UTF-8
 - H2 2.3.232：运行时数据库
-- JUnit Jupiter 5.10.2：后续测试使用
+- JUnit Jupiter 5.10.2：测试框架
+- Lombok 1.18.42：测试实体 `TUser` 使用
 - `maven-compiler-plugin`
 - `maven-surefire-plugin`
 - `exec-maven-plugin`
@@ -46,6 +47,33 @@ CREATE TABLE t_user (
 
 当前只保留表结构，没有 `data.sql`。测试数据由你在测试初始化或测试方法中自行插入。
 
+### 4. 已实现的框架模块
+
+第 01 章已完成到“事务”检查点：
+
+| 包 | 类 | 职责 |
+| --- | --- | --- |
+| `annotations` | `@Select` / `@Insert` / `@Update` / `@Delete` / `@Param` | RUNTIME 保留的 SQL 与参数注解 |
+| `mapping` | `SqlCommandType`、`MappedStatement`、`PreparedSql`、`SqlTemplateParser` | 不可变映射元数据；`#{name}` → `?` 模板解析，显式拒绝 `${}` |
+| `executor` | `Executor`、`SimpleExecutor`、`ParameterHandler`、`ResultSetHandler` | PreparedStatement 创建、参数绑定、结果集到 POJO / List 映射 |
+| `transaction` | `Transaction`、`JdbcTransaction` | 独占一个 Connection，提供 commit / rollback / close |
+
+资源边界已经固定：`SimpleExecutor` 只关闭 ResultSet / PreparedStatement，绝不 commit，也不拥有 Connection 生命周期；连接的获取、关闭和提交属于 `Transaction` / `SqlSession`（后者待实现）。
+
+### 5. 测试
+
+测试类按 `T<序号>_<主题>Test` 命名，统一放在 `com.frank.mybatis.chapter01`：
+
+| 测试类 | 覆盖内容 |
+| --- | --- |
+| `T1_JdbcBaselineTest` | 原生 JDBC 基线 |
+| `T2_AnnotationContractTest` | 注解保留策略与放置目标 |
+| `T3_SqlTemplateParserTest` | `#{}` 解析与 `${}` 拒绝 |
+| `T4_ExecutorContractTest` | 参数绑定与结果映射 |
+| `T5_JdbcTransactionTest` | JDBC 事务 commit / rollback |
+
+测试实体 `TUser`（Lombok）在 `fixture` 包，H2 测试工具在 `support` 包。
+
 ## 二、如何导入和启动
 
 ### IDEA
@@ -77,7 +105,7 @@ table initialized: T_USER
 ### 基础构建
 
 ```bash
-mvn test       # 当前还没有测试，后续每完成一个阶段就执行
+mvn test       # 当前 8 个用例（T1–T5），每完成一个检查点就会增加
 mvn package    # 编译并打包
 ```
 
@@ -102,13 +130,13 @@ package com.frank.mybatis.session;
 | 包 | 只放这些内容 | 不要放什么 |
 | --- | --- | --- |
 | `annotations` | `@Select`、`@Insert`、`@Update`、`@Delete`、`@Param` | 代理、SQL 执行代码 |
-| `mapping` | `MappedStatement`、`BoundSql`、`ResultMap` 等数据模型 | 连接管理 |
+| `mapping` | `MappedStatement`、`PreparedSql`、`SqlTemplateParser` 等元数据与 SQL 解析 | 连接管理 |
 | `builder` | XML/注解配置解析器 | JDBC 执行 |
 | `binding` | `MapperRegistry`、`MapperProxy`、方法绑定 | 结果集映射 |
 | `session` | `Configuration`、`SqlSession`、`SqlSessionFactory` | 具体 SQL 执行细节 |
-| `executor` | `Executor`、StatementHandler、参数/结果处理 | Mapper 注解定义 |
+| `executor` | `Executor`、`SimpleExecutor`、`ParameterHandler`、`ResultSetHandler` | Mapper 注解定义 |
 | `type` | `TypeHandler`、`JdbcType`、类型注册表 | 事务提交 |
-| `transaction` | `Transaction`、JDBC 事务实现 | SQL 模板解析 |
+| `transaction` | `Transaction`、`JdbcTransaction` | SQL 模板解析 |
 | `cache` | `Cache`、`CacheKey`、一级/二级缓存 | Mapper 代理 |
 | `plugin` | `Interceptor`、`Invocation`、插件代理 | 数据库表模型 |
 
@@ -123,20 +151,32 @@ src/test/java/com/frank/mybatis/
 推荐的测试包：
 
 ```text
-com.frank.mybatis.fixture     # User、Blog 等测试实体
+com.frank.mybatis.fixture     # TUser 等测试实体
 com.frank.mybatis.support     # H2DatabaseSupport 等测试工具
 com.frank.mybatis.chapter01   # 第一章测试和 UserMapper
 ```
 
-测试实体 `User` 放 `fixture`，不要放进主代码的 `mapping` 包；`mapping` 是框架代码，不是业务实体包。
+测试实体 `TUser` 放 `fixture`，不要放进主代码的 `mapping` 包；`mapping` 是框架代码，不是业务实体包。
 
 ## 四、第 01 章：严格按这个顺序创建文件
 
 不要一次创建几十个空类。每完成一个检查点，就先运行测试，再进入下一个检查点。
 
-### Checkpoint 0：数据库测试工具
+| 检查点 | 内容 | 状态 |
+| --- | --- | --- |
+| 0 | 数据库测试工具 | ✅ 已完成 |
+| 1 | 原生 JDBC 基线 | ✅ 已完成 |
+| 2 | SQL 注解 | ✅ 已完成 |
+| 3 | 最小映射模型 | ✅ 已完成 |
+| 4 | 固定 SQL 与参数处理 | ✅ 已完成 |
+| 5 | 结果集处理和 Executor | ✅ 已完成 |
+| 6 | 事务和 Session | Transaction ✅，Session 待实现 |
+| 7 | Mapper 注册和动态代理 | ⏳ 待实现 |
+| 8 | 端到端测试 | ⏳ 待实现 |
 
-先创建：
+### Checkpoint 0：数据库测试工具（已完成）
+
+已创建：
 
 ```text
 src/test/java/com/frank/mybatis/support/H2DatabaseSupport.java
@@ -157,22 +197,22 @@ package com.frank.mybatis.support;
 
 这一层只负责测试环境，不属于 MyBatis 框架。先写一个小测试，确认 `t_user` 可以创建和查询。
 
-### Checkpoint 1：原生 JDBC 基线
+### Checkpoint 1：原生 JDBC 基线（已完成）
 
-创建：
+已创建：
 
 ```text
-src/test/java/com/frank/mybatis/fixture/User.java
-src/test/java/com/frank/mybatis/chapter01/JdbcBaselineTest.java
+src/test/java/com/frank/mybatis/fixture/TUser.java
+src/test/java/com/frank/mybatis/chapter01/T1_JdbcBaselineTest.java
 ```
 
-`User` 放在：
+`TUser` 放在：
 
 ```java
 package com.frank.mybatis.fixture;
 ```
 
-至少包含：
+使用 Lombok（`@Data` / `@NoArgsConstructor` / `@AllArgsConstructor`）生成构造器和 getter/setter，字段为：
 
 ```java
 private Long id;
@@ -180,9 +220,7 @@ private String userName;
 private Integer age;
 ```
 
-以及 public 无参构造器、getter 和 setter。
-
-`JdbcBaselineTest` 放在：
+`T1_JdbcBaselineTest` 放在：
 
 ```java
 package com.frank.mybatis.chapter01;
@@ -201,9 +239,9 @@ package com.frank.mybatis.chapter01;
 
 这一步的目的是确认你理解后面要封装的重复代码。
 
-### Checkpoint 2：SQL 注解
+### Checkpoint 2：SQL 注解（已完成）
 
-创建在：
+已创建在：
 
 ```text
 src/main/java/com/frank/mybatis/annotations/Select.java
@@ -229,9 +267,9 @@ package com.frank.mybatis.annotations;
 
 此时不要写动态代理，不要写 XML，不要把注解放进 `mapping` 包。
 
-### Checkpoint 3：最小映射模型
+### Checkpoint 3：最小映射模型（已完成）
 
-创建在：
+已创建在：
 
 ```text
 src/main/java/com/frank/mybatis/mapping/SqlCommandType.java
@@ -253,9 +291,9 @@ package com.frank.mybatis.mapping;
 
 建议使用不可变类（`record` 或 final 字段），因为配置完成后这些元数据会被多个 Session 只读使用。
 
-### Checkpoint 4：固定 SQL 与参数处理
+### Checkpoint 4：固定 SQL 与参数处理（已完成）
 
-创建在：
+已创建在：
 
 ```text
 src/main/java/com/frank/mybatis/executor/ParameterHandler.java
@@ -295,9 +333,9 @@ select ... where id = ?
 
 这些属于后续章节。
 
-### Checkpoint 5：结果集处理和 Executor
+### Checkpoint 5：结果集处理和 Executor（已完成）
 
-创建在：
+已创建在：
 
 ```text
 src/main/java/com/frank/mybatis/executor/ResultSetHandler.java
@@ -327,9 +365,9 @@ SqlSession      决定 commit / rollback
 
 Executor 不要提交事务，也不要关闭不属于它的 Connection。
 
-### Checkpoint 6：事务和 Session
+### Checkpoint 6：事务和 Session（Transaction 已完成）
 
-创建在：
+已创建：
 
 ```text
 src/main/java/com/frank/mybatis/transaction/Transaction.java
@@ -347,6 +385,8 @@ package com.frank.mybatis.transaction;
 package com.frank.mybatis.session;
 ```
 
+`Transaction` / `JdbcTransaction` 已实现并有 `T5_JdbcTransactionTest` 覆盖；`session` 包的四个类是当前下一步。
+
 `Transaction` 管连接和事务动作；`SqlSession` 对外提供：
 
 - `selectOne`；
@@ -360,7 +400,7 @@ package com.frank.mybatis.session;
 
 每次 `openSession()` 都要拿到独立 Connection。不要让全局 Configuration 持有 Connection，也不要让多个 Session 共享事务状态。
 
-### Checkpoint 7：Mapper 注册和动态代理
+### Checkpoint 7：Mapper 注册和动态代理（待实现）
 
 创建在：
 
@@ -405,12 +445,12 @@ package com.frank.mybatis.chapter01;
 
 `UserMapper` 是测试用的业务接口，不要放入 `src/main/java` 的 `binding` 包。
 
-### Checkpoint 8：端到端测试
+### Checkpoint 8：端到端测试（待实现）
 
 最后创建：
 
 ```text
-src/test/java/com/frank/mybatis/chapter01/MiniMybatisChapter01Test.java
+src/test/java/com/frank/mybatis/chapter01/T8_MiniMybatisChapter01Test.java
 ```
 
 至少验证：
@@ -512,21 +552,21 @@ src/main/java/com/frank/mybatis/spring/
 
 ## 六、常见放错位置的问题
 
-### 把 User 放进 mapping
+### 把 TUser 放进 mapping
 
 错误：
 
 ```text
-src/main/java/com/frank/mybatis/mapping/User.java
+src/main/java/com/frank/mybatis/mapping/TUser.java
 ```
 
 正确：
 
 ```text
-src/test/java/com/frank/mybatis/fixture/User.java
+src/test/java/com/frank/mybatis/fixture/TUser.java
 ```
 
-`User` 是测试业务对象，不是框架元数据。
+`TUser` 是测试业务对象，不是框架元数据。
 
 ### 把 MapperProxy 放进 executor
 
