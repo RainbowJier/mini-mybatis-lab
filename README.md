@@ -2,7 +2,7 @@
 
 这是一个**从零手写 MyBatis** 的 Java 17 学习项目。目标不是马上做出一个生产级 ORM，而是沿着真实框架的调用链，一步一步把 JDBC、Mapper、动态代理、SQL 解析、结果映射、缓存和事务实现出来。
 
-> 当前进度：第 01 章施工中。`annotations`、`mapping`、`executor`、`transaction` 四个模块及测试 T1–T5 已完成（`mvn test` 全绿）；`session`、`binding`、`builder` 和端到端测试待实现，按 `docs/roadmap.md` 继续推进。
+> 当前进度：第 01 章施工中。`annotations`、`mapping`、`executor`、`transaction`、`session` 五个模块及测试 T1–T6 已完成（`mvn test` 12 个用例全绿）；`binding` 施工中（`MapperProxy`、`MapperProxyFactory` 已创建，`MapperRegistry` 待实现），`builder` 和端到端测试待实现，按本 README 第四、五节的检查点与章节规划继续推进。
 
 ## 一、当前已经有什么
 
@@ -49,7 +49,7 @@ CREATE TABLE t_user (
 
 ### 4. 已实现的框架模块
 
-第 01 章已完成到“事务”检查点：
+第 01 章已完成到“会话”检查点：
 
 | 包 | 类 | 职责 |
 | --- | --- | --- |
@@ -57,8 +57,9 @@ CREATE TABLE t_user (
 | `mapping` | `SqlCommandType`、`MappedStatement`、`PreparedSql`、`SqlTemplateParser` | 不可变映射元数据；`#{name}` → `?` 模板解析，显式拒绝 `${}` |
 | `executor` | `Executor`、`SimpleExecutor`、`ParameterHandler`、`ResultSetHandler` | PreparedStatement 创建、参数绑定、结果集到 POJO / List 映射 |
 | `transaction` | `Transaction`、`JdbcTransaction` | 独占一个 Connection，提供 commit / rollback / close |
+| `session` | `Configuration`、`SqlSessionFactory`、`DefaultSqlSessionFactory`、`SqlSession`、`DefaultSqlSession` | 全局只读配置与 statement 查找；每次 `openSession()` 取独立连接，负责 commit / rollback / close |
 
-资源边界已经固定：`SimpleExecutor` 只关闭 ResultSet / PreparedStatement，绝不 commit，也不拥有 Connection 生命周期；连接的获取、关闭和提交属于 `Transaction` / `SqlSession`（后者待实现）。
+资源边界已经固定：`SimpleExecutor` 只关闭 ResultSet / PreparedStatement，绝不 commit，也不拥有 Connection 生命周期；连接的获取、关闭和提交属于 `Transaction` / `SqlSession`。
 
 ### 5. 测试
 
@@ -71,6 +72,7 @@ CREATE TABLE t_user (
 | `T3_SqlTemplateParserTest` | `#{}` 解析与 `${}` 拒绝 |
 | `T4_ExecutorContractTest` | 参数绑定与结果映射 |
 | `T5_JdbcTransactionTest` | JDBC 事务 commit / rollback |
+| `T6_SessionContractTest` | SqlSession 事务边界：commit 跨会话可见、close 回滚未提交数据、并发会话隔离、关闭后拒绝调用 |
 
 测试实体 `TUser`（Lombok）在 `fixture` 包，H2 测试工具在 `support` 包。
 
@@ -105,7 +107,7 @@ table initialized: T_USER
 ### 基础构建
 
 ```bash
-mvn test       # 当前 8 个用例（T1–T5），每完成一个检查点就会增加
+mvn test       # 当前 12 个用例（T1–T6），每完成一个检查点就会增加
 mvn package    # 编译并打包
 ```
 
@@ -170,8 +172,8 @@ com.frank.mybatis.chapter01   # 第一章测试和 UserMapper
 | 3 | 最小映射模型 | ✅ 已完成 |
 | 4 | 固定 SQL 与参数处理 | ✅ 已完成 |
 | 5 | 结果集处理和 Executor | ✅ 已完成 |
-| 6 | 事务和 Session | Transaction ✅，Session 待实现 |
-| 7 | Mapper 注册和动态代理 | ⏳ 待实现 |
+| 6 | 事务和 Session | ✅ 已完成 |
+| 7 | Mapper 注册和动态代理 | 🔶 施工中（MapperProxy / MapperProxyFactory 已创建） |
 | 8 | 端到端测试 | ⏳ 待实现 |
 
 ### Checkpoint 0：数据库测试工具（已完成）
@@ -365,13 +367,14 @@ SqlSession      决定 commit / rollback
 
 Executor 不要提交事务，也不要关闭不属于它的 Connection。
 
-### Checkpoint 6：事务和 Session（Transaction 已完成）
+### Checkpoint 6：事务和 Session（已完成）
 
 已创建：
 
 ```text
 src/main/java/com/frank/mybatis/transaction/Transaction.java
 src/main/java/com/frank/mybatis/transaction/JdbcTransaction.java
+src/main/java/com/frank/mybatis/session/Configuration.java
 src/main/java/com/frank/mybatis/session/SqlSession.java
 src/main/java/com/frank/mybatis/session/DefaultSqlSession.java
 src/main/java/com/frank/mybatis/session/SqlSessionFactory.java
@@ -385,7 +388,7 @@ package com.frank.mybatis.transaction;
 package com.frank.mybatis.session;
 ```
 
-`Transaction` / `JdbcTransaction` 已实现并有 `T5_JdbcTransactionTest` 覆盖；`session` 包的四个类是当前下一步。
+`Transaction` / `JdbcTransaction` 由 `T5_JdbcTransactionTest` 覆盖；`session` 包五个类由 `T6_SessionContractTest` 覆盖，已验证 commit 跨会话可见、close 回滚未提交数据、并发会话隔离、关闭后拒绝调用。原本规划在检查点 7 创建的 `Configuration` 已随本检查点提前在 `session` 包落位：持有 `DataSource` 与 `MappedStatement` 注册表（重复 id 报错、未知 id 报错），配置完成后被多个 Session 只读共享，自身不持有 Connection。
 
 `Transaction` 管连接和事务动作；`SqlSession` 对外提供：
 
@@ -400,15 +403,19 @@ package com.frank.mybatis.session;
 
 每次 `openSession()` 都要拿到独立 Connection。不要让全局 Configuration 持有 Connection，也不要让多个 Session 共享事务状态。
 
-### Checkpoint 7：Mapper 注册和动态代理（待实现）
+### Checkpoint 7：Mapper 注册和动态代理（施工中）
 
-创建在：
+已创建：
 
 ```text
 src/main/java/com/frank/mybatis/binding/MapperProxy.java
 src/main/java/com/frank/mybatis/binding/MapperProxyFactory.java
+```
+
+待创建：
+
+```text
 src/main/java/com/frank/mybatis/binding/MapperRegistry.java
-src/main/java/com/frank/mybatis/session/Configuration.java
 src/main/java/com/frank/mybatis/builder/MapperAnnotationBuilder.java
 ```
 
@@ -416,9 +423,10 @@ src/main/java/com/frank/mybatis/builder/MapperAnnotationBuilder.java
 
 ```java
 package com.frank.mybatis.binding;
-package com.frank.mybatis.session;
 package com.frank.mybatis.builder;
 ```
+
+说明：规划中的 `session/Configuration.java` 已随检查点 6 完成，不再列入本检查点。`MapperProxy` 是 `InvocationHandler`：Object 方法本地处理，业务方法按“接口全限定名 + 方法名”生成 statement id，从 `Configuration` 查 `MappedStatement`，经 `ParameterHandler.resolve` 解析参数后按命令类型路由到 `SqlSession` 的 selectOne / selectList / insert / update / delete。`MapperProxyFactory` 用 JDK 动态代理为 mapper 接口合成无实现类的代理实例。
 
 调用链应该变成：
 
