@@ -6,7 +6,7 @@ import com.frank.mybatis.fixture.TUser;
 import com.frank.mybatis.mapping.MappedStatement;
 import com.frank.mybatis.mapping.SqlCommandType;
 import com.frank.mybatis.mapping.SqlTemplateParser;
-import com.frank.mybatis.support.H2DatabaseSupport;
+import com.frank.mybatis.support.MySQLDatabaseSupport;
 import org.junit.jupiter.api.Test;
 
 import java.sql.Connection;
@@ -27,7 +27,7 @@ public class T4_ExecutorContractTest {
 
     @Test
     void bindsBySqlOrderAndKeepsConnectionOpen() throws SQLException {
-        try (Connection c = H2DatabaseSupport.newDataSource().getConnection()) {
+        try (Connection c = MySQLDatabaseSupport.newDataSource().getConnection()) {
             c.setAutoCommit(false);
             Executor executor = new SimpleExecutor(c);
 
@@ -53,7 +53,7 @@ public class T4_ExecutorContractTest {
 
     @Test
     void selectOneRejectsMultipleRows() throws SQLException {
-        try (Connection c = H2DatabaseSupport.newDataSource().getConnection();
+        try (Connection c = MySQLDatabaseSupport.newDataSource().getConnection();
              Statement s = c.createStatement()) {
 
             String insertSql = "insert into t_user values(2,'A',20),(3,'B',21)";

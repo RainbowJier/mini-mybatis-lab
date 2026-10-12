@@ -1,45 +1,55 @@
 package com.frank.mybatis;
 
-import org.h2.jdbcx.JdbcDataSource;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Properties;
 
 /**
  * Mini-MyBatis 实验项目的启动入口。
+ * <p>
+ * 连接信息统一来自 classpath 上的 db.properties，schema.sql 使用
+ * IF NOT EXISTS，保证可以对同一个 MySQL 库重复执行。
  */
 public final class MiniMybatisApplication {
-
-    private static final String DATABASE_URL =
-            "jdbc:h2:mem:mini_mybatis;DB_CLOSE_DELAY=-1";
 
     private MiniMybatisApplication() {
     }
 
     public static void main(String[] args) {
-        JdbcDataSource dataSource = createDataSource();
-        initializeDatabase(dataSource);
-        System.out.println("mini-mybatis-lab started");
-        System.out.println("database initialized: " + DATABASE_URL);
-        System.out.println("table initialized: T_USER");
+        Properties db = loadDbProperties();
+        String url = db.getProperty("jdbc.url");
+        try (Connection connection = DriverManager.getConnection(
+                url, db.getProperty("jdbc.username"), db.getProperty("jdbc.password"))) {
+            initializeDatabase(connection);
+            System.out.println("mini-mybatis-lab started");
+            System.out.println("database initialized: " + url);
+            System.out.println("table initialized: T_USER");
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to connect database: " + url, exception);
+        }
     }
 
-    private static JdbcDataSource createDataSource() {
-        JdbcDataSource dataSource = new JdbcDataSource();
-        dataSource.setURL(DATABASE_URL);
-        dataSource.setUser("sa");
-        dataSource.setPassword("");
-        return dataSource;
+    private static Properties loadDbProperties() {
+        try (InputStream in = MiniMybatisApplication.class.getClassLoader().getResourceAsStream("db.properties")) {
+            if (in == null) {
+                throw new IllegalStateException("db.properties was not found on the classpath");
+            }
+            Properties properties = new Properties();
+            properties.load(in);
+            return properties;
+        } catch (IOException exception) {
+            throw new IllegalStateException("Failed to load db.properties", exception);
+        }
     }
 
-    private static void initializeDatabase(JdbcDataSource dataSource) {
-        try (Connection connection = dataSource.getConnection();
-             InputStream script = loadSchemaScript();
+    private static void initializeDatabase(Connection connection) {
+        try (InputStream script = loadSchemaScript();
              Statement statement = connection.createStatement()) {
 
             statement.execute(new String(script.readAllBytes(), StandardCharsets.UTF_8));
@@ -59,13 +69,13 @@ public final class MiniMybatisApplication {
     }
 
     private static void verifyTable(Connection connection) throws SQLException {
-        String sql = "SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES "
-                + "WHERE TABLE_SCHEMA = 'PUBLIC' AND TABLE_NAME = 'T_USER'";
+        String sql = "SELECT COUNT(*) FROM information_schema.tables "
+                + "WHERE table_schema = DATABASE() AND table_name = 't_user'";
         try (Statement statement = connection.createStatement();
              ResultSet resultSet = statement.executeQuery(sql)) {
             resultSet.next();
             if (resultSet.getInt(1) != 1) {
-                throw new SQLException("T_USER was not created");
+                throw new SQLException("t_user was not created");
             }
         }
     }

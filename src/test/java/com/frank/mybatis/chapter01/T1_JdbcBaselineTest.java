@@ -1,6 +1,6 @@
 package com.frank.mybatis.chapter01;
 
-import com.frank.mybatis.support.H2DatabaseSupport;
+import com.frank.mybatis.support.MySQLDatabaseSupport;
 import org.junit.jupiter.api.Test;
 
 import javax.sql.DataSource;
@@ -12,7 +12,7 @@ class T1_JdbcBaselineTest {
 
     @Test
     void bindQueryNullAndRollback() throws Exception {
-        DataSource ds = H2DatabaseSupport.newDataSource();
+        DataSource ds = MySQLDatabaseSupport.newDataSource();
         try (Connection c = ds.getConnection()) {
             c.setAutoCommit(false);
             

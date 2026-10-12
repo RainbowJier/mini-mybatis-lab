@@ -4,7 +4,6 @@ import com.frank.mybatis.executor.ParameterHandler;
 import com.frank.mybatis.mapping.MappedStatement;
 import com.frank.mybatis.session.Configuration;
 import com.frank.mybatis.session.SqlSession;
-import org.h2.engine.Session;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -16,6 +15,7 @@ public final class MapperProxy implements InvocationHandler {
 
     private final Configuration configuration;
 
+    // mapper
     private final Class<?> mapperType;
 
     public MapperProxy(SqlSession session, Configuration configuration, Class<?> mapperType) {

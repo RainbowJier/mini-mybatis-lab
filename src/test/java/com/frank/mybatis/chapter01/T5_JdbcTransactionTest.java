@@ -1,6 +1,6 @@
 package com.frank.mybatis.chapter01;
 
-import com.frank.mybatis.support.H2DatabaseSupport;
+import com.frank.mybatis.support.MySQLDatabaseSupport;
 import com.frank.mybatis.transaction.JdbcTransaction;
 import org.junit.jupiter.api.Test;
 
@@ -16,7 +16,7 @@ public class T5_JdbcTransactionTest {
 
     @Test
     void commitPersistsAndRollbackDiscards() throws SQLException {
-        DataSource ds = H2DatabaseSupport.newDataSource();
+        DataSource ds = MySQLDatabaseSupport.newDataSource();
         JdbcTransaction transaction = new JdbcTransaction(ds);
         Connection connection = transaction.getConnection();
 

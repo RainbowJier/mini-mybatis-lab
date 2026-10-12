@@ -4,7 +4,7 @@ import com.frank.mybatis.fixture.TUser;
 import com.frank.mybatis.mapping.*;
 import com.frank.mybatis.session.*;
 import com.frank.mybatis.session.DefaultSqlSessionFactory;
-import com.frank.mybatis.support.H2DatabaseSupport;
+import com.frank.mybatis.support.MySQLDatabaseSupport;
 
 import java.util.*;
 
@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class T6_SessionContractTest {
     private SqlSessionFactory factory() {
-        Configuration c = new Configuration(H2DatabaseSupport.newDataSource());
+        Configuration c = new Configuration(MySQLDatabaseSupport.newDataSource());
         c.addMappedStatement(stmt("chapter01.session.insert",
                 "insert into t_user(id,user_name,age) values(#{id},#{name},#{age})",
                 SqlCommandType.INSERT));

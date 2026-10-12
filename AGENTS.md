@@ -13,7 +13,7 @@
 mvn test                          # 全部测试（每完成一个检查点必须跑）
 mvn test -Dtest=ExecutorContractTest_04   # 只跑单个测试类
 mvn clean test && mvn package     # 完整验证
-mvn compile exec:java             # 运行 MiniMybatisApplication：初始化 H2 内存库 t_user
+mvn compile exec:java             # 运行 MiniMybatisApplication：初始化 MySQL 库中的 t_user
 ```
 
 Java 17、UTF-8；surefire 配置了 `failIfNoTests=false`。构建通过只是底线，章节完成的真正标准是对应测试覆盖行为边界。
@@ -25,7 +25,7 @@ Java 17、UTF-8；surefire 配置了 `failIfNoTests=false`。构建通过只是�
 | `annotations` | `@Select/@Insert/@Update/@Delete/@Param` 纯注解 | 执行逻辑、代理 |
 | `mapping` | `MappedStatement`、`PreparedSql`、`SqlCommandType`、`SqlTemplateParser` 等不可变元数据与 SQL 解析 | 连接管理、JDBC 执行 |
 | `executor` | `Executor`、`SimpleExecutor`、`ParameterHandler`（静态工具）、`ResultSetHandler` | 代理、事务提交 |
-| `fixture` / `support` | 测试实体 `TUser`、`H2DatabaseSupport`（在 src/test，属测试基础设施） | 框架代码 |
+| `fixture` / `support` | 测试实体 `TUser`、`MySQLDatabaseSupport`（在 src/test，属测试基础设施） | 框架代码 |
 | 后续章节新增 | `binding`(动态代理)、`session`、`builder`、`transaction`、`type`、`cache`、`plugin`、`scripting` | 不要塞进已有包 |
 
 资源所有权（必须保持）：
@@ -44,8 +44,8 @@ Java 17、UTF-8；surefire 配置了 `failIfNoTests=false`。构建通过只是�
 
 ## 已知坑
 
-- `schema.sql` 只保留 `src/main/resources` 一份；`MiniMybatisApplication` 和测试的 `H2DatabaseSupport` 都从 classpath 读取（test classpath 包含 main 资源），不要再复制副本到 test resources。
+- `schema.sql` 只保留 `src/main/resources` 一份；`MiniMybatisApplication` 和测试的 `MySQLDatabaseSupport` 都从 classpath 读取（test classpath 包含 main 资源），不要再复制副本到 test resources。连接信息集中在 `src/main/resources/db.properties`，两边共用，不要另写第二份配置。
 - surefire 的 includes 已改为 `**/*Test*.java`，因为默认规则（`*Test` 结尾）匹配不到 `Test_NN` 后缀的测试类；新增测试类名保持含 `Test` 即可。
-- H2 是内存库且每次测试用随机库名（`DB_CLOSE_DELAY=-1`），没有 data.sql；测试数据在测试内自行插入。
+- 数据库是外部 MySQL（127.0.0.1:3307 的 `mini-mybatis-lab` 库，utf8mb4），数据持久保存，没有 data.sql；测试数据在测试内自行插入。所有测试共享同一个库，隔离靠 `MySQLDatabaseSupport.newDataSource()` 每次调用先 `DROP TABLE IF EXISTS t_user` 再执行 `schema.sql`，新增测试统一通过它拿 `DataSource`，不要自己直连。跑测试前必须保证 MySQL 可达，否则整个套件会失败。
 - 仓库根目录有个未跟踪的 `nul` 文件（Windows 保留名导致的意外产物），是垃圾文件，忽略即可，勿引用。
 - 开发环境为 Windows + Git Bash。

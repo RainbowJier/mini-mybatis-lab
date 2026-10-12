@@ -110,8 +110,9 @@ public class ResultSetHandler {
      * key("ID")        ==> "id"
      * key("userID")    ==> "userId"
      * <p>
-     * 这样 H2 返回的大写列名（ID / USER_NAME / AGE）与 Java 驼峰字段名
-     * （id / userName / age）会归一化到同一个 key。
+     * 这样不同数据库返回的列名（如 H2/MySQL 元数据里的大写 ID / USER_NAME / AGE，
+     * 或 SQL 中写出的小写 id / user_name）与 Java 驼峰字段名
+     * （id / userName / age）都会归一化到同一个 key。
      */
     private String key(String value) {
         StringBuilder camel = new StringBuilder(value.length());

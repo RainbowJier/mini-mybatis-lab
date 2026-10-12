@@ -2,7 +2,7 @@
 
 这是一个**从零手写 MyBatis** 的 Java 17 学习项目。目标不是马上做出一个生产级 ORM，而是沿着真实框架的调用链，一步一步把 JDBC、Mapper、动态代理、SQL 解析、结果映射、缓存和事务实现出来。
 
-> 当前进度：第 01 章施工中。`annotations`、`mapping`、`executor`、`transaction`、`session` 五个模块及测试 T1–T6 已完成（`mvn test` 12 个用例全绿）；`binding` 施工中（`MapperProxy`、`MapperProxyFactory` 已创建，`MapperRegistry` 待实现），`builder` 和端到端测试待实现，按本 README 第四、五节的检查点与章节规划继续推进。
+> 当前进度：第 01 章施工中。`annotations`、`mapping`、`executor`、`transaction`、`session` 五个模块及测试 T1–T6 已完成（`mvn test` 12 个用例全绿）；`binding` 施工中（`MapperProxy`、`MapperProxyFactory` 已创建，`MapperRegistry` 待实现），`builder` 和端到端测试待实现，按本 README 第四、五节的检查点与章节规划继续推进。数据源已从 H2 内存库切换为外部 MySQL（127.0.0.1:3307，配置在 `src/main/resources/db.properties`）。
 
 ## 一、当前已经有什么
 
@@ -12,7 +12,7 @@
 
 - Java 17
 - UTF-8
-- H2 2.3.232：运行时数据库
+- mysql-connector-j 8.4.0：MySQL JDBC 驱动（数据库运行在 127.0.0.1:3307）
 - JUnit Jupiter 5.10.2：测试框架
 - Lombok 1.18.42：测试实体 `TUser` 使用
 - `maven-compiler-plugin`
@@ -25,9 +25,9 @@
 
 当前启动类只负责：
 
-1. 创建 H2 内存数据库连接；
+1. 读取 classpath 上的 `db.properties`，建立 MySQL 连接；
 2. 读取 `src/main/resources/schema.sql`；
-3. 创建 `t_user` 表；
+3. 确认 `t_user` 表存在（`CREATE TABLE IF NOT EXISTS`，可重复执行）；
 4. 检查表是否创建成功；
 5. 输出初始化结果。
 
@@ -38,14 +38,14 @@
 文件：`src/main/resources/schema.sql`
 
 ```sql
-CREATE TABLE t_user (
+CREATE TABLE IF NOT EXISTS t_user (
     id BIGINT PRIMARY KEY,
     user_name VARCHAR(100) NOT NULL,
-    age INTEGER
-);
+    age INT
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 ```
 
-当前只保留表结构，没有 `data.sql`。测试数据由你在测试初始化或测试方法中自行插入。
+当前只保留表结构，没有 `data.sql`。测试数据由你在测试初始化或测试方法中自行插入。数据库连接信息（host、端口、账号）统一放在 `src/main/resources/db.properties`，主程序和测试工具共用一份。
 
 ### 4. 已实现的框架模块
 
@@ -74,7 +74,7 @@ CREATE TABLE t_user (
 | `T5_JdbcTransactionTest` | JDBC 事务 commit / rollback |
 | `T6_SessionContractTest` | SqlSession 事务边界：commit 跨会话可见、close 回滚未提交数据、并发会话隔离、关闭后拒绝调用 |
 
-测试实体 `TUser`（Lombok）在 `fixture` 包，H2 测试工具在 `support` 包。
+测试实体 `TUser`（Lombok）在 `fixture` 包，MySQL 测试工具在 `support` 包。
 
 ## 二、如何导入和启动
 
@@ -94,15 +94,15 @@ CREATE TABLE t_user (
 mvn compile exec:java
 ```
 
-看到下面的输出就表示数据库初始化成功：
+看到下面的输出就表示数据库连接和表初始化成功：
 
 ```text
 mini-mybatis-lab started
-database initialized: jdbc:h2:mem:mini_mybatis;DB_CLOSE_DELAY=-1
+database initialized: jdbc:mysql://127.0.0.1:3307/mini-mybatis-lab?characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
 table initialized: T_USER
 ```
 
-这是 H2 内存数据库。进程退出后，数据会销毁；`DB_CLOSE_DELAY=-1` 只保证同一个 JVM 存活期间数据库不因连接关闭而消失。
+这是外部 MySQL 数据库（127.0.0.1:3307 的 `mini-mybatis-lab` 库），数据持久保存，进程退出后不会销毁。
 
 ### 基础构建
 
@@ -154,7 +154,7 @@ src/test/java/com/frank/mybatis/
 
 ```text
 com.frank.mybatis.fixture     # TUser 等测试实体
-com.frank.mybatis.support     # H2DatabaseSupport 等测试工具
+com.frank.mybatis.support     # MySQLDatabaseSupport 等测试工具
 com.frank.mybatis.chapter01   # 第一章测试和 UserMapper
 ```
 
@@ -181,7 +181,7 @@ com.frank.mybatis.chapter01   # 第一章测试和 UserMapper
 已创建：
 
 ```text
-src/test/java/com/frank/mybatis/support/H2DatabaseSupport.java
+src/test/java/com/frank/mybatis/support/MySQLDatabaseSupport.java
 ```
 
 包名：
@@ -192,12 +192,11 @@ package com.frank.mybatis.support;
 
 职责：
 
-- 创建唯一名称的 H2 内存数据库；
-- 获取 `JdbcDataSource`；
-- 执行 `schema.sql`；
+- 读取 classpath 上的 `db.properties`，连接共享的 MySQL 库；
+- 每次调用 `newDataSource()` 先 `DROP TABLE IF EXISTS t_user` 再执行 `schema.sql`，保证每个测试方法拿到干净的表；
 - 交给测试一个可用的 `DataSource`。
 
-这一层只负责测试环境，不属于 MyBatis 框架。先写一个小测试，确认 `t_user` 可以创建和查询。
+这一层只负责测试环境，不属于 MyBatis 框架。它假设 MySQL 已经在 127.0.0.1:3307 运行且 `mini-mybatis-lab` 库存在；先写一个小测试，确认 `t_user` 可以创建和查询。
 
 ### Checkpoint 1：原生 JDBC 基线（已完成）
 
