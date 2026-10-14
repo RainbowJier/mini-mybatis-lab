@@ -16,8 +16,8 @@ public class T3_SqlTemplateParserTest {
     void preservesSqlOrderAndRepeatedNames() {
         PreparedSql sql = SqlTemplateParser.parse("select * from t_user where id=#{ id } and age=#{age} or id=#{id}");
 
-        assertEquals("select * from t_user where id=? and age=? or id=?", sql.sql());
-        assertEquals(List.of("id", "age", "id"), sql.parameterNames());
+        assertEquals("select * from t_user where id=? and age=? or id=?", sql.getSql());
+        assertEquals(List.of("id", "age", "id"), sql.getParameterNames());
     }
 
     @Test
@@ -33,8 +33,8 @@ public class T3_SqlTemplateParserTest {
         var names = new ArrayList<>(List.of("id"));
         PreparedSql sql = new PreparedSql("select ?", names);
         names.clear();
-        assertEquals(List.of("id"), sql.parameterNames());
-        assertThrows(UnsupportedOperationException.class, () -> sql.parameterNames().clear());
+        assertEquals(List.of("id"), sql.getParameterNames());
+        assertThrows(UnsupportedOperationException.class, () -> sql.getParameterNames().clear());
     }
 
 

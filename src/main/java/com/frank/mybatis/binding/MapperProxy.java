@@ -1,5 +1,6 @@
 package com.frank.mybatis.binding;
 
+import com.frank.mybatis.common.SessionId;
 import com.frank.mybatis.executor.ParameterHandler;
 import com.frank.mybatis.mapping.MappedStatement;
 import com.frank.mybatis.session.Configuration;
@@ -35,7 +36,7 @@ public final class MapperProxy implements InvocationHandler {
             };
         }
 
-        String sessionId = mapperType.getName() + ":" + method.getName();
+        String sessionId = SessionId.of(mapperType, method.getName());
         MappedStatement mappedStatement = configuration.getMappedStatement(sessionId);
         Map<String, Object> p = ParameterHandler.resolve(method, args);
         return switch (mappedStatement.commandType()) {

@@ -33,7 +33,7 @@ public final class MapperProxyFactory<T> {
                 new MapperProxy(session, configuration, mapperType)
         );
 
-        // 等价于 (T) proxy，但类型安全，无需 @SuppressWarnings("unchecked")
+        // 等价于 (T) proxy，但类型安全
         return mapperType.cast(proxy);
     }
 

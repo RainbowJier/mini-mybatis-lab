@@ -20,9 +20,6 @@ public interface SqlSession extends AutoCloseable {
 
     int delete(String sessionId, Map<String, Object> parameter);
 
-    /**
-     * calling mapper defined by user.
-     */
     <T> T getMapper(Class<T> mapperType);
 
     void commit();

@@ -54,7 +54,8 @@ public final class DefaultSqlSession implements SqlSession {
 
     @Override
     public <T> T getMapper(Class<T> mapperType) {
-        return null;
+        requireOpen();
+        return configuration.getMapperRegistry().getMapper(mapperType, this);
     }
 
 

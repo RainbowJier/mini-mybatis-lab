@@ -1,18 +1,21 @@
 package com.frank.mybatis.session;
 
+import com.frank.mybatis.binding.MapperRegistry;
 import com.frank.mybatis.mapping.MappedStatement;
-import lombok.Getter;
+import lombok.Data;
 
 import javax.sql.DataSource;
 import java.util.HashMap;
 import java.util.Map;
 
+@Data
 public final class Configuration {
 
-    @Getter
     private final DataSource dataSource;
 
     private final Map<String, MappedStatement> statements = new HashMap<>();
+
+    private final MapperRegistry mapperRegistry = new MapperRegistry(this);
 
     public Configuration(DataSource dataSource) {
         this.dataSource = dataSource;
@@ -31,6 +34,10 @@ public final class Configuration {
         }
 
         return m;
+    }
+
+    public <T> void addMapper(Class<T> type) {
+        mapperRegistry.addMapper(type);
     }
 
 }
