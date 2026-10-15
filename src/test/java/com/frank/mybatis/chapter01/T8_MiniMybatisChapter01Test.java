@@ -23,9 +23,9 @@ public class T8_MiniMybatisChapter01Test {
     @BeforeEach
     void setUp() {
         DataSource ds = MySQLDatabaseSupport.newDataSource();
-        Configuration c = new Configuration(ds);
-        c.addMapper(UserMapper.class);
-        factory = new DefaultSqlSessionFactory(c);
+        Configuration configuration = new Configuration(ds);
+        configuration.addMapper(UserMapper.class);
+        factory = new DefaultSqlSessionFactory(configuration);
     }
 
     @Test

@@ -31,7 +31,7 @@ public class SimpleExecutor implements Executor {
     @Override
     public <T> List<T> queryList(MappedStatement s, Map<String, Object> values, Class<T> type) {
         require(s, SqlCommandType.SELECT);
-        try (PreparedStatement ps = connection.prepareStatement(s.preparedSql().getSql())) {
+        try (PreparedStatement ps = connection.prepareStatement(s.preparedSql().sql())) {
             ParameterHandler.bind(ps, s.preparedSql(), values);
             try (ResultSet rs = ps.executeQuery()) {
                 return resultSetHandler.handle(rs, type);
@@ -47,7 +47,7 @@ public class SimpleExecutor implements Executor {
             throw new IllegalArgumentException("Invalid command type: " + s.commandType());
         }
 
-        try (PreparedStatement ps = connection.prepareStatement(s.preparedSql().getSql())) {
+        try (PreparedStatement ps = connection.prepareStatement(s.preparedSql().sql())) {
             ParameterHandler.bind(ps, s.preparedSql(), values);
             return ps.executeUpdate();
         } catch (SQLException e) {

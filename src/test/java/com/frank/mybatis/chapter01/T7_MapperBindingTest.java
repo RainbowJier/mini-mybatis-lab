@@ -23,7 +23,7 @@ public class T7_MapperBindingTest {
         assertThrows(IllegalArgumentException.class, () -> c.addMapper(TUser.class));
         assertThrows(IllegalArgumentException.class, () -> c.getMappedStatement("missing.id"));
         var statement = c.getMappedStatement(UserMapper.class.getName() + ".rename");
-        assertEquals(List.of("name", "id"), statement.preparedSql().getParameterNames());
+        assertEquals(List.of("name", "id"), statement.preparedSql().parameterNames());
     }
 
 

@@ -40,8 +40,8 @@ public final class ParameterHandler {
      * binding parameter values.
      */
     public static void bind(PreparedStatement ps, PreparedSql sql, Map<String, Object> values) throws SQLException {
-        for (int i = 0; i < sql.getParameterNames().size(); i++) {
-            String name = sql.getParameterNames().get(i);
+        for (int i = 0; i < sql.parameterNames().size(); i++) {
+            String name = sql.parameterNames().get(i);
             if (!values.containsKey(name)) throw new IllegalArgumentException("Parameter name not found: " + name);
 
             ps.setObject(i + 1, values.get(name));

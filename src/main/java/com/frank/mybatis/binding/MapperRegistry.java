@@ -27,7 +27,6 @@ public final class MapperRegistry {
         MapperAnnotationBuilder mapperAnnotationBuilder = new MapperAnnotationBuilder(configuration, mapperType);
         mapperAnnotationBuilder.parse();
 
-        // 校验通过后，才为该 Mapper 创建代理工厂并注册，供后续 getMapper 生成动态代理实例。
         // Create and register the mapper proxy factory,
         // so that the subsequent getMapper operation can generate a dynamic proxy instance.
         regedit.put(mapperType, new MapperProxyFactory<>(mapperType, configuration));

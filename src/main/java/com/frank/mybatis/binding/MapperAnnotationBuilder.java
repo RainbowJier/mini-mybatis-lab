@@ -75,7 +75,7 @@ public final class MapperAnnotationBuilder {
         Map<String, Object> declared = ParameterHandler.resolve(m, new Object[m.getParameterCount()]);
 
         // check parameter is valid.
-        for (String name : preparedSql.getParameterNames()) {
+        for (String name : preparedSql.parameterNames()) {
             if (!declared.containsKey(name)) throw new IllegalArgumentException("SQL 参数未声明: " + name);
         }
 
